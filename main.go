@@ -157,18 +157,7 @@ func main() {
 	app.Handle(`^/`, func(ctx *Context) {
 		http.ServeFile(ctx.ResponseWriter, ctx.Request, "./static"+ctx.Request.URL.Path)
 	})
-	log.Fatal(http.ListenAndServe(":8080", app))
-
-	// install mongodb on macos
-	// $ brew tap mongodb/brew
-	// $ brew install mongodb-community
-
-	// or ssh port forward
-	// $ ssh -fN -L 27019:localhost:27017 linode
-
-	// hot-reload
-	// $ go get github.com/codegangsta/gin
-	// $ gin -a 8080 run main.go
+	log.Fatal(http.ListenAndServe(":8081", app))
 }
 
 // --- API ---

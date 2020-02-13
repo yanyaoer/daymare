@@ -57,8 +57,8 @@
         }
       </style>
       <dm-header></dm-header>
-      <dm-body></dm-body>
       <dm-editor></dm-editor>
+      <dm-body></dm-body>
       <dm-footer></dm-footer>`;
 
     connectedCallback() {
@@ -68,9 +68,12 @@
   });
 
   window.customElements.define('dm-header', class extends BaseElement {
-    template = `<style>:host div { color: #666 }</style>
+    template = `<style>
+      :host h1 { margin-bottom:0; display: inline-block; }
+      :host span { color #666; font-size:12px; }
+      </style>
       <h1>Daymare</h1>
-      <div>How Can a Daylight Know The Darkness Of Night</div>`;
+      <span>How Can a Daylight Know The Darkness Of Night</span>`;
 
     connectedCallback() {
       this.render()
@@ -104,21 +107,34 @@
         .on('G-new-article', e => this.render_index(e.detail))
     }
 
+    render_item(d) {
+      const item = document.createElement('dm-article');
+      const conv = new showdown.Converter({metadata: true});
+      const html = conv.makeHtml(d.body)
+      const meta = conv.getMetadata();
+      item.innerHTML = `
+        <h2 slot="title">
+          ${meta.title || d.title}
+          <dm-info>${meta.date || d.ctime}</dm-info>
+        </h2>
+        <div slot="body">${html}</div>`;
+      return item;
+    }
+
     render_index(data) {
       if (!data) return;
-      data.forEach(d=> {
-        const item = document.createElement('dm-article');
-        const conv = new showdown.Converter({metadata: true});
-        const html = conv.makeHtml(d.body)
-        const meta = conv.getMetadata();
-        item.innerHTML = `
-          <h2 slot="title">${meta.title || d.title}</h2>
-          <div slot="body">
-            post on ${meta.date || d.ctime}<br />
-            ${html}
-          </div>`;
-        this.prepend(item);
-      })
+      data.forEach(d=> this.prepend(this.render_item(d)))
+    }
+  });
+
+  window.customElements.define('dm-info', class extends BaseElement {
+    template = `<style>
+      :host { margin:0; color:#666; font-size: 11px; font-weight: normal; }
+    </style>
+    <slot></slot>`;
+
+    connectedCallback() {
+      this.render()
     }
   });
 
@@ -137,13 +153,14 @@
 
   window.customElements.define('dm-editor', class extends BaseElement {
     template = `<style>
-      :host {
-        --gap: 10px;
-        position: fixed;
-        bottom: var(--gap);
-        right: var(--gap);
+      :host textarea {
+        display: block;
+        width: 100%;
+        height: 5em;
+        background: #eee;
+        border: 5px solid #ccc;
+        border-sizing: border-box;
       }
-      :host textarea { display: block; }
     </style>
     <div>
       <form>
