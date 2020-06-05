@@ -153,6 +153,7 @@ func main() {
 	app := NewApp()
 	app.Handle(`^/api/save$`, app.saveHandler)
 	app.Handle(`^/api/article/([\w\._-]+)$`, app.articleHandler)
+	app.Handle(`^/api/login$`, app.loginHandler)
 	app.Handle(`^/api/index$`, app.indexHandler)
 	app.Handle(`^/`, func(ctx *Context) {
 		http.ServeFile(ctx.ResponseWriter, ctx.Request, "./static"+ctx.Request.URL.Path)
@@ -168,6 +169,11 @@ func (a *App) indexHandler(ctx *Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, items)
+}
+
+func (a *App) loginHandler(ctx *Context) {
+	// send email for token
+	ctx.JSON(http.StatusOK, map[string]string{"token": "998100"})
 }
 
 func (a *App) saveHandler(ctx *Context) {

@@ -57,7 +57,6 @@
         }
       </style>
       <dm-header></dm-header>
-      <dm-editor></dm-editor>
       <dm-body></dm-body>
       <dm-footer></dm-footer>`;
 
@@ -66,6 +65,31 @@
         .fetch('/api/index').then(d=> this.emit('G-fresh-index', d));
     }
   });
+
+  class Store {
+    _data = window.localStorage;
+    _key = 'user';
+    _ttl = 7 * 24 * 60 * 60 * 1000; // a week
+
+    set user(token) {
+      this._data.setItem(this._key, {
+        token,
+        expire: now.getTime() + this._ttl
+      })
+
+    }
+    get user() {
+      const item = this._data.getItem(this._key);
+      if (!item) return null;
+
+      const data = JSON.parse(item);
+      if (new Date() > data.expire) {
+        this._data.removeItem(this._key);
+        return null;
+      }
+      return data.token
+    }
+  }
 
   window.customElements.define('dm-header', class extends BaseElement {
     template = `<style>
@@ -76,7 +100,47 @@
       <span>How Can a Daylight Know The Darkness Of Night</span>`;
 
     connectedCallback() {
-      this.render()
+      this.render().setUser();
+    }
+
+    setUser() {
+      const tag = Store.user ? 'dm-editor' : 'dm-login'
+      this.shadowRoot.appendChild(document.createElement('dm-login'));
+    }
+
+  });
+
+  window.customElements.define('dm-login', class extends BaseElement {
+    template = `<style>
+      </style>
+      <form action="/api/login">
+        <input type="text" name="email" placeholder="login with email:" />
+        <button>send</button>
+      </form>`
+
+    connectedCallback() {
+      this.render().shadowQuery('form')
+        .addEventListener('submit', ev => this.onSubmit(ev));
+    }
+
+    onSubmit(ev) {
+      ev.preventDefault();
+      const form = this.shadowQuery('form');
+      const url = form.getAttribute('action')
+      const body = this.shadowQuery('[name="email"]').value;
+      this.fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ body })
+      }).then(d=> {
+        form.setAttribute('action', '/api/verify')
+        this.shadowQuery('[name="email"]').setAttribute('type', 'hidden')
+
+        const token = document.createElement('input');
+        token.setAttribute('name', 'token');
+        token.setAttribute('placeholder', 'token:');
+        this.shadowQuery('button').textContent = 'verify';
+        form.prepend(token);
+      });
     }
   });
 
@@ -104,7 +168,7 @@
     connectedCallback() {
       this.render()
         .on('G-fresh-index', e => this.render_index(e.detail))
-        .on('G-new-article', e => this.render_index(e.detail))
+        .on('G-create-article', e => this.render_index(e.detail))
     }
 
     render_item(d) {
@@ -180,7 +244,7 @@
       this.fetch('/api/save', {
         method: 'POST',
         body: JSON.stringify({ body })
-      }).then(d=> this.emit('G-new-article', [d]));
+      }).then(d=> this.emit('G-create-article', [d]));
     }
   });
 
